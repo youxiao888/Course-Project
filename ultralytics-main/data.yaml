@@ -1,0 +1,13 @@
+train: data/train/images
+val: data/valid/images
+test: data/test/images
+
+nc: 1
+names: ['backside']
+
+roboflow:
+  workspace: yolov-nrdi1
+  project: project-y8dzl
+  version: 2
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/yolov-nrdi1/project-y8dzl/dataset/2
