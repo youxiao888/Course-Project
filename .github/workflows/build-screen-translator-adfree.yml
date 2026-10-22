@@ -117,6 +117,7 @@ jobs:
                   t=sub(t,pattern)
               return t
           edit("gradle/libs.versions.toml",cat)
+          edit("gradle/libs.versions.toml",lambda t:rep(rep(t,'androidxLifecycle = "2.11.0"','androidxLifecycle = "2.10.0"'),'hiltLifecycleViewModelCompose = "1.4.0"','hiltLifecycleViewModelCompose = "1.3.0"'))
           def manifest(t):
               t=cut(t,'        <!-- taskAffinity="": 앱 메인 태스크','        <activity\n            android:name=".ui.screen.ads.ReviewActivity"')
               t=sub(t,r'(?m)^        <meta-data\n            android:name="google_analytics_default_allow_ad_(?:storage|user_data|personalization_signals)"\n            android:value="true" />\n',n=3)
