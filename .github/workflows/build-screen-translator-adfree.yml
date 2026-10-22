@@ -1,0 +1,150 @@
+name: Compile Screen Translator (no ads)
+on:
+  push:
+    branches:
+      - screen-translator-adfree-build-20261022
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install SDK 37
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager --install "platforms;android-37" "build-tools;37.0.0"
+      - name: Clone pinned upstream
+        run: |
+          git clone https://github.com/aidanpark/screen-translator.git upstream
+          cd upstream
+          git checkout --detach 9f6a8630fbcbdc9d41bd75a7d824da76ec4a9436
+      - name: Remove advertising code and configure non-production debug Firebase
+        working-directory: upstream
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, json
+          root=pathlib.Path(".")
+          base="app/src/main/java/com/galaxy/airviewdictionary/"
+          def edit(p,fn):
+              f=root/p
+              t=f.read_text(encoding="utf8")
+              u=fn(t)
+              if u==t: raise RuntimeError("No edit: "+p)
+              f.write_text(u,encoding="utf8")
+              print("patched",p)
+          def rep(t,a,b=""):
+              assert t.count(a)==1,("not unique",a[:100],t.count(a))
+              return t.replace(a,b,1)
+          def cut(t,a,b):
+              assert t.count(a)==1 and t.count(b)==1,(a[:40],b[:40])
+              x,y=t.index(a),t.index(b)
+              assert y>x
+              return t[:x]+t[y:]
+          def sub(t,pattern,repl="",n=1,flags=0):
+              u,count=re.subn(pattern,repl,t,count=n,flags=flags)
+              assert count==n,(pattern,count)
+              return u
+          def app(t):
+              t=rep(t,"import com.galaxy.airviewdictionary.ui.screen.ads.AdGateActivity\n")
+              t=rep(t,"        registerAdGateBackgroundCleanup()\n")
+              t=cut(t,"    /**\n     * 앱의 모든 액티비티가 stop","    /**\n     * 언번들(GMS) ML Kit OCR")
+              t=sub(t,r"(?m)^        // 광고 SDK 초기화는 .*\n        // \(여기서의 중복 초기화는.*\n",n=1)
+              t=sub(t,r"(?s)            val consentMap = mapOf\(\n.*?\n            \)",'            val consentMap = mapOf(\n                FirebaseAnalytics.ConsentType.ANALYTICS_STORAGE to FirebaseAnalytics.ConsentStatus.GRANTED,\n            )')
+              return t
+          edit(base+"App.kt",app)
+          def vm(t):
+              t=rep(t,"import com.galaxy.airviewdictionary.data.local.ads.AdGateState\n")
+              t=rep(t,"import com.galaxy.airviewdictionary.ui.screen.ads.AdGateActivity\n")
+              t=sub(t,r"(?m)^\s*if \(AdGateActivity\.coveringFlow\.value\) \{\n\s*return@also\n\s*\}\n")
+              t=cut(t,"        // 광고 로드 연속 실패로 부여된 게이트 억제 상태를 메모리로 올린다.","        /**\n         * 아하 시점의 리뷰 요청")
+              t=rep(t,"if (reviewAttemptedInProcess || adGateDue())","if (reviewAttemptedInProcess)")
+              t=rep(t,"SettingsActivity.liveStateFlow.value || AdGateActivity.liveStateFlow.value","SettingsActivity.liveStateFlow.value")
+              t=cut(t,"        /**\n         * 광고 게이트:\n","    }\n\n    /** 포인터 번역이 오류 없이")
+              t=cut(t,"    /**\n     * 광고 게이트를 열 때인가","    init {")
+              assert t.count("collectAdGateInfo()")==2
+              t=t.replace("collectAdGateInfo()","collectReviewAndUsageInfo()")
+              return t
+          edit(base+"ui/screen/overlay/targethandle/TargetHandleViewModel.kt",vm)
+          edit(base+"ui/screen/overlay/fixedarea/FixedAreaView.kt",lambda t:sub(t,r"(?ms)^                // 광고 게이트를 열 때면 열고 종료.*?^                else \{\n                    requestVision\(context, selectedArea\)\n                \}","                requestVision(context, selectedArea)"))
+          def menu(t):
+              t=rep(t,"import com.galaxy.airviewdictionary.ui.screen.ads.AdGateActivity\n")
+              t=rep(t,"            // 광고 게이트·광고 화면이 오버레이를 가리는 동안에는 메뉴바를 숨긴다\n            val adGateCovering by AdGateActivity.coveringFlow.collectAsStateWithLifecycle()\n\n")
+              t=rep(t,"                adGateCovering,\n")
+              return rep(t,"                        adGateCovering -> false // 광고 게이트/광고 표시 중에는 숨김\n")
+          edit(base+"ui/screen/overlay/menubar/MenuBarView.kt",menu)
+          def pref(t):
+              t=cut(t,"        // 광고 로드 연속 실패 횟수.","        // 인앱 리뷰를 마지막으로 청한 시각")
+              t=cut(t,"    val adLoadFailureStreakFlow:","    val wasTrailerShownFlow:")
+              return cut(t,"    /**\n     * 광고 게이트가 열린 횟수를 하나","    /**\n     * 저장된 문자열을 enum")
+          edit(base+"data/local/preference/PreferenceRepository.kt",pref)
+          def conf(t):
+              t=rep(t,"import com.galaxy.airviewdictionary.data.local.ads.AdGatePolicy\n")
+              t=rep(t,'        const val AD_UNIT_ID = "ad_unit_id"\n')
+              t=cut(t,"        // 광고 게이트(광고 안내 팝업) 동작 정책.","        // PP-OCRv5 끄기 스위치")
+              return cut(t,"    /**\n     * 광고 게이트 정책.","    /** OpenAI 번역 모델")
+          edit(base+"data/remote/firebase/RemoteConfigRepository.kt",conf)
+          def analytics(t):
+              t=rep(t,'    const val AD_GATE = "ad_gate"\n')
+              t=cut(t,"    /** 광고 안내 팝업의 단계","    const val INSTALL_COUNT")
+              t=cut(t,"    /**\n     * 광고 안내 팝업의 흐름","    fun hoursTakenReport")
+              return cut(t,"    /** [adGateReport] 의 단계 값. */","    companion object {")
+          edit(base+"data/remote/firebase/AnalyticsRepository.kt",analytics)
+          def gradle(t):
+              t=rep(t,"    implementation(libs.admob)\n")
+              t=cut(t,"    // 우리는 WorkManager 를 직접 쓰지 않고, AdMob(","    // theme\n")
+              t=sub(t,r'(?m)^            manifestPlaceholders\["ADMOB_APP_ID"\] = .*\n',n=2)
+              t=rep(t,'    assetPacks += listOf(":paddle_models")')
+              t=rep(t,'    sourceSets.getByName("debug").assets.directories.add("../paddle_models/src/main/assets")')
+              return t
+          edit("app/build.gradle.kts",gradle)
+          def cat(t):
+              for pattern in [r'(?m)^admob = "[^\n]+"\n',r'(?m)^workRuntime = "[^\n]+"\n',r'(?m)^admob = \{[^\n]+\}\n',r'(?m)^androidx-work-runtime = \{[^\n]+\}\n']:
+                  t=sub(t,pattern)
+              return t
+          edit("gradle/libs.versions.toml",cat)
+          def manifest(t):
+              t=cut(t,'        <!-- taskAffinity="": 앱 메인 태스크','        <activity\n            android:name=".ui.screen.ads.ReviewActivity"')
+              t=sub(t,r'(?m)^        <meta-data\n            android:name="google_analytics_default_allow_ad_(?:storage|user_data|personalization_signals)"\n            android:value="true" />\n',n=3)
+              return sub(t,r'(?s)\n<!--        <meta-data-->.*?        <meta-data\n            android:name="com\.google\.android\.gms\.ads\.APPLICATION_ID"\n            android:value="\$\{ADMOB_APP_ID\}" />')
+          edit("app/src/main/AndroidManifest.xml",manifest)
+          def cfg(t):
+              t=cut(t,"    <!--\n        2.4.0 ~ 무료체험 광고 아이디","    <!--\n        2.7.2 ~ AI 번역")
+              return cut(t,"    <!--\n        광고 게이트(광고 안내 팝업) 동작 정책.","    <!--\n        2.8.0 ~ PP-OCRv5")
+          edit("app/src/main/res/xml/remote_config_defaults.xml",cfg)
+          edit("settings.gradle.kts",lambda t:rep(t,'include(":paddle_models")'))
+          for f in (root/"app/src/main/res").glob("values*/strings.xml"):
+              s=f.read_text("utf8")
+              f.write_text(re.sub(r'(?m)^\s*<string name="ad_gate_(?:loading|reward_notice)"[^>]*>[^\n]*</string>\n','',s),encoding="utf8")
+          for p in ["data/local/ads/AdGatePolicy.kt","data/local/ads/AdGateState.kt","data/local/ads/RewardedAdCache.kt","ui/screen/ads/AdGateActivity.kt","ui/screen/main/GoogleMobileAdsConsentManager.kt"]:
+              (root/base/p).unlink()
+          (root/"app/src/test/java/com/galaxy/airviewdictionary/data/local/ads/AdGateStateTest.kt").unlink()
+          refs=["AdGateActivity","AdGateState","AdGatePolicy","RewardedAdCache","GoogleMobileAdsConsentManager","com.google.android.gms.ads","com.google.android.ump","adGateDue"]
+          for f in (root/"app/src/main/java").rglob("*.kt"):
+              for k in refs:
+                  assert k not in f.read_text("utf8"), (f,k)
+          print("Ad removal checks passed")
+          config={"project_info":{"project_number":"123456789012","project_id":"screen-translator-debug-local","storage_bucket":"screen-translator-debug-local.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:123456789012:android:abcdef0123456789abcdef01","android_client_info":{"package_name":"com.galaxy.airviewdictionary"}},"api_key":[{"current_key":"AIzaSyDEBUG_ONLY_PLACEHOLDER_NOT_A_REAL_API_KEY"}],"oauth_client":[]}],"configuration_version":"1"}
+          (root/"app/google-services.json").write_text(json.dumps(config),encoding="utf8")
+          PY
+      - name: Compile Debug APK
+        working-directory: upstream
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screen-translator-adfree-debug-apk
+          path: upstream/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
