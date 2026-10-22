@@ -22,11 +22,11 @@ jobs:
           echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
       - name: Install SDK 37
         run: |
-          SDKMANAGER="$(find "$ANDROID_HOME" -type f -name sdkmanager | head -1)"
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           if [ -z "$SDKMANAGER" ]; then echo "No SDK manager in $ANDROID_HOME"; find "$ANDROID_HOME" -maxdepth 3 -type d; exit 2; fi
           echo "SDK manager: $SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" --install "platforms;android-37" "build-tools;37.0.0"
+          "$SDKMANAGER" --install "platforms;android-36" "build-tools;36.0.0"
       - name: Clone pinned upstream
         run: |
           git clone https://github.com/aidanpark/screen-translator.git upstream
@@ -107,6 +107,7 @@ jobs:
               t=rep(t,"    implementation(libs.admob)\n")
               t=cut(t,"    // 우리는 WorkManager 를 직접 쓰지 않고, AdMob(","    // theme\n")
               t=sub(t,r'(?m)^            manifestPlaceholders\["ADMOB_APP_ID"\] = .*\n',n=2)
+              t=rep(t,"    compileSdk = 37","    compileSdk = 36")
               t=rep(t,'    assetPacks += listOf(":paddle_models")')
               t=rep(t,'    sourceSets.getByName("debug").assets.directories.add("../paddle_models/src/main/assets")')
               return t
