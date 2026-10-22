@@ -150,7 +150,7 @@ change(vm,
 
 change(vm,
        '''                    if (isNotDuplicate) {
-                        send(currentPoint) // Emit the position using \`send\`
+                        send(currentPoint) // Emit the position using `send`
                         lastEmittedPoint = currentPoint // Update the last emitted point
                     }''',
        '''                    if (isNotDuplicate) {
@@ -182,12 +182,12 @@ change(vm,
 change(vm,
        '''                        cancelTimer() // Cancel the ongoing timer
                         _pointerPosition = null // Reset the pointer position
-                        send(null) // Emit null using \`send\`''',
+                        send(null) // Emit null using `send`''',
        '''                        cancelTimer() // Cancel the ongoing timer
                         wordDwellJob?.cancel()
                         wordHoverOverrideFlow.value = null
                         _pointerPosition = null // Reset the pointer position
-                        send(null) // Emit null using \`send\`''')
+                        send(null) // Emit null using `send`''')
 
 change(vm,
        '''                cancelTimer() // Cancel the timer when pointer is invalid
