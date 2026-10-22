@@ -22,8 +22,11 @@ jobs:
           echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
       - name: Install SDK 37
         run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager --install "platforms;android-37" "build-tools;37.0.0"
+          SDKMANAGER="$(find "$ANDROID_HOME" -type f -name sdkmanager | head -1)"
+          if [ -z "$SDKMANAGER" ]; then echo "No SDK manager in $ANDROID_HOME"; find "$ANDROID_HOME" -maxdepth 3 -type d; exit 2; fi
+          echo "SDK manager: $SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install "platforms;android-37" "build-tools;37.0.0"
       - name: Clone pinned upstream
         run: |
           git clone https://github.com/aidanpark/screen-translator.git upstream
