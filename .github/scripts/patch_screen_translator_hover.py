@@ -136,6 +136,10 @@ change(str(capture),
 vm = str(base / "ui/screen/overlay/targethandle/TargetHandleViewModel.kt")
 
 change(vm,
+       'import kotlinx.coroutines.withContext\n',
+       'import kotlinx.coroutines.withContext\nimport kotlinx.coroutines.withTimeoutOrNull\n')
+
+change(vm,
        '    private val POINTER_STOPPED_MARGIN_DISTANCE: Int =',
        '''    // Normal sentence/paragraph hover is unchanged. An additional long dwell
     // over a recognized *word* switches only that target to word translation.
