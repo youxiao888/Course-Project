@@ -16,8 +16,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Locate runner Android SDK
+        run: |
+          echo "$ANDROID_HOME/cmdline-tools/16.0/bin" >> "$GITHUB_PATH"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
       - name: Install SDK 37
         run: |
           yes | sdkmanager --licenses >/dev/null || true
