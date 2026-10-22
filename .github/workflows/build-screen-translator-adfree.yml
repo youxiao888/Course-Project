@@ -97,7 +97,7 @@ jobs:
               t=cut(t,"        // 광고 게이트(광고 안내 팝업) 동작 정책.","        // PP-OCRv5 끄기 스위치")
               return cut(t,"    /**\n     * 광고 게이트 정책.","    /** OpenAI 번역 모델")
           edit(base+"data/remote/firebase/RemoteConfigRepository.kt",conf)
-          edit(base+"data/remote/firebase/RemoteConfigRepository.kt",lambda t:rep(t,'        Timber.tag(TAG).d("AD_UNIT_ID ${remoteConfig[AD_UNIT_ID].asString()}")\\n'))
+          edit(base+"data/remote/firebase/RemoteConfigRepository.kt",lambda t:rep(t,'        Timber.tag(TAG).d("AD_UNIT_ID ${remoteConfig[AD_UNIT_ID].asString()}")'))
           def analytics(t):
               t=rep(t,'    const val AD_GATE = "ad_gate"\n')
               t=cut(t,"    /** 광고 안내 팝업의 단계","    const val INSTALL_COUNT")
