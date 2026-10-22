@@ -1,4 +1,4 @@
-name: Compile Screen Translator (no ads)
+name: Compile Screen Translator (no ads + smart hover)
 on:
   push:
     branches:
@@ -11,6 +11,10 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Checkout customization scripts
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
@@ -144,6 +148,9 @@ jobs:
           config={"project_info":{"project_number":"123456789012","project_id":"screen-translator-debug-local","storage_bucket":"screen-translator-debug-local.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:123456789012:android:abcdef0123456789abcdef01","android_client_info":{"package_name":"com.galaxy.airviewdictionary"}},"api_key":[{"current_key":"AIzaSyDEBUG_ONLY_PLACEHOLDER_NOT_A_REAL_API_KEY"}],"oauth_client":[]}],"configuration_version":"1"}
           (root/"app/google-services.json").write_text(json.dumps(config),encoding="utf8")
           PY
+      - name: Add optional screenshot and adaptive word hover
+        working-directory: upstream
+        run: python3 ../.github/scripts/patch_screen_translator_hover.py
       - name: Compile Debug APK
         working-directory: upstream
         run: |
@@ -153,7 +160,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: screen-translator-adfree-debug-apk
+          name: screen-translator-adfree-smart-hover-apk
           path: upstream/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
