@@ -136,14 +136,10 @@ change(str(capture),
 vm = str(base / "ui/screen/overlay/targethandle/TargetHandleViewModel.kt")
 
 change(vm,
-       'import kotlinx.coroutines.withContext\n',
-       'import kotlinx.coroutines.withContext\nimport kotlinx.coroutines.withTimeoutOrNull\n')
-
-change(vm,
        '    private val POINTER_STOPPED_MARGIN_DISTANCE: Int =',
        '''    // Normal sentence/paragraph hover is unchanged. An additional long dwell
     // over a recognized *word* switches only that target to word translation.
-    private val WORD_HOVER_DWELL_MS = 2200L
+    private val WORD_HOVER_DWELL_MS = 1500L
     private val wordHoverOverrideFlow = MutableStateFlow<Point?>(null)
 
     private val POINTER_STOPPED_MARGIN_DISTANCE: Int =''')
@@ -152,6 +148,9 @@ change(vm,
        '        var timerJob: Job? = null\n\n        // Helper function to calculate distance',
        '''        var timerJob: Job? = null
         var wordDwellJob: Job? = null
+        // Important: this scope is the channelFlow producer, NOT the short timer.
+        // A child launched inside timerJob is cancelled when timerJob completes.
+        val dwellScope = this
 
         // Helper function to calculate distance''')
 
@@ -168,18 +167,24 @@ change(vm,
                         if (textDetectMode == TextDetectMode.SENTENCE ||
                             textDetectMode == TextDetectMode.PARAGRAPH
                         ) {
-                            wordDwellJob = launch {
+                            // This job must be a sibling of timerJob; never launch it
+                            // inside the timerJob scope (it would be cancelled at 80ms).
+                            wordDwellJob = dwellScope.launch {
                                 delay(WORD_HOVER_DWELL_MS)
-                                // Wait for the ordinary target selection to occur first.
-                                // For slow OCR there is no premature word-only translation.
-                                withTimeoutOrNull(5000L) {
-                                    currentTargetFlow.filterNotNull().first { target ->
-                                        target.visionText.boundingBox.contains(currentPoint.x, currentPoint.y)
-                                    }
-                                } ?: return@launch
-                                if (motionEventFlow.value == MotionEvent.ACTION_DOWN ||
-                                    motionEventFlow.value == MotionEvent.ACTION_MOVE
+                                val motion = motionEventFlow.value
+                                val latest = pointerPositionFlow.value
+                                val stillAtSameSpot = latest != null &&
+                                    calculateDistance(latest, currentPoint) <= POINTER_STOPPED_MARGIN_DISTANCE
+                                if ((motion == MotionEvent.ACTION_DOWN ||
+                                        motion == MotionEvent.ACTION_MOVE) &&
+                                    stillAtSameSpot &&
+                                    lastEmittedPoint == currentPoint &&
+                                    (textDetectMode == TextDetectMode.SENTENCE ||
+                                        textDetectMode == TextDetectMode.PARAGRAPH)
                                 ) {
+                                    Timber.tag(TAG).d("SmartHover: long dwell reached at $currentPoint")
+                                    // Do not wait for a translation/API response; OCR
+                                    // selection will recalculate when the state changes.
                                     wordHoverOverrideFlow.value = currentPoint
                                 }
                             }
@@ -260,10 +265,15 @@ change(vm,
             visionResult.image == null
         ) {
             val word = getPointerPositionedVisionText(visionResult, pointerPosition, TextDetectMode.WORD)
-            if (word is Word && word.representation.isNotBlank() &&
-                word.boundingBox.contains(pointerPosition.x, pointerPosition.y) &&
-                word.representation.trim().split(Regex("\\\\s+")).size == 1
-            ) return word
+            if (word is Word &&
+                word.representation.trim().isNotEmpty() &&
+                word.representation.trim().length <= 40 &&
+                !word.representation.any { it.isWhitespace() } &&
+                expandedRect(word.boundingBox).contains(pointerPosition.x, pointerPosition.y)
+            ) {
+                Timber.tag(TAG).d("SmartHover: word selected: ${word.representation}")
+                return word
+            }
         }
         return getPointerPositionedVisionText(visionResult, pointerPosition, textDetectMode)
     }
@@ -275,6 +285,7 @@ change(vm,
        '''                            || movedWithinImageTarget(last, lookup)''',
        '''                            || movedWithinImageTarget(last, lookup)
                             || (wordHoverOverrideFlow.value != null &&
-                                lookup.visionText is Word && last?.visionText !is Word)''')
+                                lookup.visionText is Word && last?.visionText !is Word)
+                            || (last?.visionText is Word && lookup.visionText !is Word)''')
 
 print("Accessibility screenshot and adaptive long-hover patches passed.")
