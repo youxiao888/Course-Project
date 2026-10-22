@@ -133,6 +133,7 @@ jobs:
           for p in ["data/local/ads/AdGatePolicy.kt","data/local/ads/AdGateState.kt","data/local/ads/RewardedAdCache.kt","ui/screen/ads/AdGateActivity.kt","ui/screen/main/GoogleMobileAdsConsentManager.kt"]:
               (root/base/p).unlink()
           (root/"app/src/test/java/com/galaxy/airviewdictionary/data/local/ads/AdGateStateTest.kt").unlink()
+          edit(base+"ui/common/ReviewPrompter.kt",lambda t:rep(t,"광고 게이트([com.galaxy.airviewdictionary.ui.screen.ads.AdGateActivity])와\\n * 설정 화면이 같이 쓴다.","설정 화면과 오버레이가 같이 쓴다."))
           refs=["AdGateActivity","AdGateState","AdGatePolicy","RewardedAdCache","GoogleMobileAdsConsentManager","com.google.android.gms.ads","com.google.android.ump","adGateDue"]
           for f in (root/"app/src/main/java").rglob("*.kt"):
               for k in refs:
