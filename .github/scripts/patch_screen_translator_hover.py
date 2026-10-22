@@ -118,11 +118,14 @@ change(str(capture),
        '        captureResponseFlow.value = null\n\n        Timber.tag(TAG).i("State $state")',
        '''        // If the user enabled the optional screenshot accessibility service, do not
         // request a new MediaProjection session or show the OS consent dialog.
-        // When disabled or unavailable, fall back to the original capture path.
+        // When disabled, preserve the original capture path. When enabled,
+        // transient screenshot errors should NOT reopen the OS consent dialog.
         if (OcrScreenshotAccessibilityService.isConnected) {
             val screenshot = OcrScreenshotAccessibilityService.screenshot()
-            if (screenshot != null) {
-                return CaptureResponse.Success(removeAlphaChannel(screenshot))
+            return if (screenshot != null) {
+                CaptureResponse.Success(removeAlphaChannel(screenshot))
+            } else {
+                CaptureResponse.Error(CapturedImageInvalidException())
             }
         }
 
@@ -263,5 +266,11 @@ change(vm,
 
     /** 포인터가 머무는 위치의 VisionText. 그 자리에 글이 없으면 null. */
     val pointerPositionedVisionTextFlow''')
+
+change(vm,
+       '''                            || movedWithinImageTarget(last, lookup)''',
+       '''                            || movedWithinImageTarget(last, lookup)
+                            || (wordHoverOverrideFlow.value != null &&
+                                lookup.visionText is Word && last?.visionText !is Word)''')
 
 print("Accessibility screenshot and adaptive long-hover patches passed.")
