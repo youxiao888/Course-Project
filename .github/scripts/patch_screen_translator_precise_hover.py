@@ -240,4 +240,12 @@ class PreciseWordHitTest {
     }
 }
 """,encoding="utf8")
+# The original unit test still references an advertising preference removed from
+# the ad-free build. Keep the guide-reset behavior test but drop obsolete ad data.
+old_test="app/src/test/java/com/galaxy/airviewdictionary/data/local/preference/OverlayGuideResetTest.kt"
+change(old_test,
+       '            PreferenceRepository.AD_GATE_SUPPRESSED_UNTIL to 1234L,\n', '')
+change(old_test,
+       '        assertEquals(1234L, preferences[PreferenceRepository.AD_GATE_SUPPRESSED_UNTIL])\n', '')
+
 print("Precise hover geometry + independent no-edge docking switch patch succeeded.")
