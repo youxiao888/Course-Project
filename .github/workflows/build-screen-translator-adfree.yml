@@ -1,4 +1,4 @@
-name: Compile Screen Translator (no ads + smart hover)
+name: Compile Screen Translator (precise hover + free docking)
 on:
   push:
     branches:
@@ -151,6 +151,14 @@ jobs:
       - name: Add optional screenshot and adaptive word hover
         working-directory: upstream
         run: python3 ../.github/scripts/patch_screen_translator_hover.py
+      - name: Apply precise hover and no-edge-docking option
+        working-directory: upstream
+        run: python3 ../.github/scripts/patch_screen_translator_precise_hover.py
+      - name: Verify precise word and gap behavior
+        working-directory: upstream
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:testDebugUnitTest --tests com.galaxy.airviewdictionary.ui.screen.overlay.targethandle.PreciseWordHitTest --no-daemon --stacktrace
       - name: Compile Debug APK
         working-directory: upstream
         run: |
@@ -160,7 +168,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: screen-translator-adfree-smart-hover-apk
+          name: screen-translator-precise-hover-no-edge-docking-apk
           path: upstream/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
