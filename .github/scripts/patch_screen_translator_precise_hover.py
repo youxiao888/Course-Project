@@ -46,7 +46,7 @@ old="""            val word = getPointerPositionedVisionText(visionResult, point
                 !word.representation.any { it.isWhitespace() } &&
                 expandedRect(word.boundingBox).contains(pointerPosition.x, pointerPosition.y)
             ) {
-                Timber.tag(TAG).d("SmartHover: word selected: \${word.representation}")
+                Timber.tag(TAG).d("SmartHover: word selected: ${word.representation}")
                 return word
             }"""
 new="""            // Read the paragraph via the same cache used by normal target selection.
@@ -73,7 +73,7 @@ new="""            // Read the paragraph via the same cache used by normal targe
             // both keep the sentence or paragraph that the user selected.
             if (wordsUnderPointer.size == 1) {
                 val word = wordsUnderPointer.single()
-                Timber.tag(TAG).d("SmartHover precise word: \${word.representation}")
+                Timber.tag(TAG).d("SmartHover precise word: ${word.representation}")
                 return word
             }
             Timber.tag(TAG).d("SmartHover gap/overlap: normal sentence or paragraph")"""
