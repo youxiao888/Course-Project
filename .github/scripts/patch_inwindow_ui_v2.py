@@ -430,11 +430,44 @@ insert=r'''
                         }
                         else -> {
                             val definition=entry!!.definition
-                            // HTML dictionaries are rendered as formatted text for safety.
-                            val rendered=if(definition.trimStart().startsWith("<"))
-                                Html.fromHtml(definition,Html.FROM_HTML_MODE_COMPACT).toString()
-                            else definition
-                            Text(rendered,fontSize=15.sp,lineHeight=24.sp,color=ink)
+                            if(definition.trimStart().startsWith("<")) {
+                                // Preserve Oxford MDX entry HTML layout without
+                                // allowing scripts, file access, or network requests.
+                                androidx.compose.ui.viewinterop.AndroidView(
+                                    factory={ctx->
+                                        android.webkit.WebView(ctx).apply {
+                                            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                                            settings.javaScriptEnabled=false
+                                            settings.allowFileAccess=false
+                                            settings.allowContentAccess=false
+                                            settings.blockNetworkLoads=true
+                                            isVerticalScrollBarEnabled=false
+                                            webViewClient=object:android.webkit.WebViewClient() {
+                                                override fun shouldOverrideUrlLoading(
+                                                    view:android.webkit.WebView?,
+                                                    request:android.webkit.WebResourceRequest?
+                                                ):Boolean {
+                                                    val url=request?.url ?: return true
+                                                    val key=when(url.scheme) {
+                                                        "bword","entry" -> url.schemeSpecificPart
+                                                        else -> null
+                                                    }
+                                                    if(!key.isNullOrBlank())onNavigate(key.removePrefix("//"))
+                                                    return true
+                                                }
+                                            }
+                                        }
+                                    },
+                                    update={view->
+                                        if(view.tag != definition) {
+                                            view.tag=definition
+                                            val html="""<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:-apple-system,Roboto,sans-serif;font-size:15px;line-height:1.58;color:#1C1C1E;margin:0;padding:3px}img{max-width:100%;height:auto}table{max-width:100%}</style></head><body>""" + definition + "</body></html>"
+                                            view.loadDataWithBaseURL("https://dictionary.invalid/",html,"text/html","utf-8",null)
+                                        }
+                                    },
+                                    modifier=Modifier.fillMaxWidth().height(315.dp)
+                                )
+                            } else Text(definition,fontSize=15.sp,lineHeight=24.sp,color=ink)
                         }
                     }
                 }
