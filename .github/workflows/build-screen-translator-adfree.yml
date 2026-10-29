@@ -1,4 +1,4 @@
-name: Compile Screen Translator (precise hover + free docking)
+name: Screen Translator (stable overlay + offline dictionary beta)
 on:
   push:
     branches:
@@ -154,6 +154,12 @@ jobs:
       - name: Apply precise hover and no-edge-docking option
         working-directory: upstream
         run: python3 ../.github/scripts/patch_screen_translator_precise_hover.py
+      - name: Stabilize ball hit area and make translation window movable
+        working-directory: upstream
+        run: python3 ../.github/scripts/patch_overlay_stability.py
+      - name: Add offline dictionary and word-tap navigation
+        working-directory: upstream
+        run: python3 ../.github/scripts/patch_dictionary_v1.py
       - name: Verify precise word and gap behavior
         working-directory: upstream
         run: |
@@ -168,7 +174,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: screen-translator-precise-hover-no-edge-docking-apk
+          name: screen-translator-dictionary-stable-overlay-beta-apk
           path: upstream/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
