@@ -53,7 +53,7 @@ class UserDictionary(context: Context) : SQLiteOpenHelper(
         val term = normalize(word)
         if (term.isNotEmpty()) writableDatabase.execSQL(
             "INSERT OR REPLACE INTO history(term,used_at) VALUES(?,?)",
-            arrayOf(term,System.currentTimeMillis())
+            arrayOf<Any>(term,System.currentTimeMillis())
         )
     }
 
