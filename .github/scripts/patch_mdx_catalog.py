@@ -85,7 +85,7 @@ internal object MdxCatalog {
             val reader=cls().getMethod("loadDictionaryData",Path::class.java)
                 .invoke(null,file.toPath())
             val method=reader.javaClass.getMethod("getEntries",String::class.java)
-            val keys=listOf("/$raw","\\\\\${raw.replace('/','\\\\')}","$raw")
+            val keys=listOf("/$raw", 92.toChar().toString()+raw.replace('/',92.toChar()), raw)
             var content:ByteArray?=null
             for(key in keys) {
                 val entries=(method.invoke(reader,key) as? List<*>).orEmpty()
