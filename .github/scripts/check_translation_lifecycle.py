@@ -10,7 +10,11 @@ composition=t[start:end]
 assert 'initialValue = Pair<VisionText?, Transaction?>(null, null)' in composition, "Initial state changed; inspect lifecycle policy"
 assert "val display=current ?: if(holdTranslation) lastDisplay else null" in composition, "Snapshot fallback removed"
 assert "TranslationBox(" in composition, "Translation UI no longer rendered"
-assert "clear()" not in composition, "CRITICAL: initial loading state must never destroy the window"
+import re
+# Ignore explanatory comments when checking executable Compose code.
+executable=re.sub(r'//[^\\n]*','',composition)
+executable=re.sub(r'/\\*[\\s\\S]*?\\*/','',executable)
+assert "clear()" not in executable, "CRITICAL: initial loading state must never destroy the window"
 assert "else if(display!=null)" in composition, "Valid translation must be rendered without a premature attached-flag race"
 assert "lastDisplay=Pair(visionText,translation)" in t, "cast must save translation before Compose sees initial flow"
 # Prior regression: with initial null-null, no direct flow result is available yet.
