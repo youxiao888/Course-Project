@@ -74,6 +74,32 @@ internal object MdxCatalog {
         synchronized(cache){cache[file.absolutePath]=obj}
         return obj
     }
+    /** Resolve optional same-name MDD images/CSS/audio for a local MDX entry. */
+    fun asset(ctx:Context,source:String,requestPath:String):ByteArray? {
+        val base=source.substringBeforeLast('.')
+        val file=File(dir(ctx),"$base.mdd")
+        if(!file.exists())return null
+        val raw=requestPath.substringBefore('?').trimStart('/')
+        if(raw.isBlank()||raw.length>250||".." in raw)return null
+        return runCatching {
+            val reader=cls().getMethod("loadDictionaryData",Path::class.java)
+                .invoke(null,file.toPath())
+            val method=reader.javaClass.getMethod("getEntries",String::class.java)
+            val keys=listOf("/$raw","\\\\\${raw.replace('/','\\\\')}","$raw")
+            var content:ByteArray?=null
+            for(key in keys) {
+                val entries=(method.invoke(reader,key) as? List<*>).orEmpty()
+                val item=entries.firstOrNull() as? Map.Entry<*,*> ?: continue
+                val dataMethod=reader.javaClass.methods.firstOrNull {
+                    it.name=="getData" && it.parameterCount==1
+                } ?: break
+                val data=dataMethod.invoke(reader,item.value) as? ByteArray
+                if(data!=null && data.size<=8*1024*1024) {content=data;break}
+            }
+            content
+        }.getOrNull()
+    }
+
     fun lookup(ctx:Context,word:String):DictionaryEntry? {
         if(word.isBlank()||word.length>120)return null
         for(file in dir(ctx).listFiles().orEmpty().filter {it.extension.equals("mdx",true)}) {
