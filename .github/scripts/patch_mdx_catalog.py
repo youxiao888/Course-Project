@@ -7,7 +7,7 @@ def edit(p,old,new):
  if s.count(old)!=1:raise RuntimeError(f"{p} anchor {s.count(old)}")
  p.write_text(s.replace(old,new,1),"utf8")
 p=Path("app/build.gradle.kts");s=p.read_text("utf8")
-s=s.replace("dependencies {",'dependencies {\n    implementation("tokyo.northside:mdict4j:0.4.0")',1)
+s=s.replace("dependencies {",'dependencies {\n    implementation("tokyo.northside:mdict4j:0.4.0") {\n        exclude(group = "com.google.code.findbugs", module = "annotations")\n    }',1)
 p.write_text(s,"utf8")
 edit(b/"UserDictionary.kt",'        return null\n    }\n\n    fun markHistory',
      '        return MdxCatalog.lookup(app,word)\n    }\n\n    fun markHistory')
