@@ -300,7 +300,9 @@ new='''        val current=translationState?.let { (v,t) -> if(v!=null && t!=nul
                 onBack={dictionaryBack(context)},
                 onNavigate={enterDictionary(context,it)}
             )
-        } else if(display!=null && isAttachedToWindow()) {
+        } else if(display!=null) {
+            // Compose may run before the attached flag is observed. Rendering is
+            // safe here: this composable is created by OverlayView's window.
             val (visionText,translation)=display
             val fontSizeSp=getRenderFontSizeSp(context,visionText.fontHeight).sp
             TranslationBox(
@@ -309,9 +311,11 @@ new='''        val current=translationState?.let { (v,t) -> if(v!=null && t!=nul
                 onResumeDismissRunning={targetHandleViewModel.resumeDismissRunning()},
                 onRerunDismissRunning={targetHandleViewModel.rerunDismissRunning()}
             )
-        } else if(!holdTranslation) {
-            clear()
-        }'''
+        }
+        // IMPORTANT: translationFlow starts with Pair(null,null). This is
+        // LOADING, NOT a dismissal event. Never call clear() here: doing so
+        // immediately removes the overlay window before OCR translation arrives.
+        // Explicit close and service lifecycle paths still call clear().'''
 change(trans,start,new)
 change(trans,
 '''        super.cast(applicationContext)
