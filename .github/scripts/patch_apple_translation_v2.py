@@ -17,7 +17,7 @@ body=r'''    @Composable
     ) {
         drawnTranslation=translation
         val context=LocalContext.current
-        val source=translation.sourceText
+        val source=translation.sourceText.orEmpty()
         val result=translation.resultText.orEmpty()
         val ink=Color(0xFF1C1C1E)
         val blue=Color(0xFF007AFF)
