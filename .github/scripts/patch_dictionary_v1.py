@@ -226,7 +226,7 @@ class DictionaryActivity : ComponentActivity() {
                     version++
                     message="已导入 $count 条词条"
                 }.onFailure { error ->
-                    message="导入失败：\${error.message}"
+                    message="导入失败：${error.message}"
                 }
             }
         }
@@ -304,7 +304,7 @@ class DictionaryActivity : ComponentActivity() {
                         HorizontalDivider()
                         Spacer(Modifier.height(10.dp))
                         if(result!=null) {
-                            Text("释义 · \${result!!.source}",fontSize=12.sp,color=Color.Gray)
+                            Text("释义 · ${result!!.source}",fontSize=12.sp,color=Color.Gray)
                             Spacer(Modifier.height(7.dp))
                             Text(result!!.definition,fontSize=16.sp,lineHeight=24.sp)
                         } else {
