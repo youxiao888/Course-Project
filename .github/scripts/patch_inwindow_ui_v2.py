@@ -443,6 +443,32 @@ insert=r'''
                                             settings.blockNetworkLoads=true
                                             isVerticalScrollBarEnabled=false
                                             webViewClient=object:android.webkit.WebViewClient() {
+                                                override fun shouldInterceptRequest(
+                                                    view:android.webkit.WebView?,
+                                                    request:android.webkit.WebResourceRequest?
+                                                ):android.webkit.WebResourceResponse? {
+                                                    val uri=request?.url ?: return null
+                                                    if(uri.host!="dictionary.invalid") return android.webkit.WebResourceResponse(
+                                                        "text/plain","utf-8",java.io.ByteArrayInputStream(byteArrayOf()))
+                                                    val bytes=com.galaxy.airviewdictionary.data.local.dictionary.MdxCatalog.asset(
+                                                        ctx,entry?.source.orEmpty(),uri.encodedPath.orEmpty()
+                                                    ) ?: return null
+                                                    val path=uri.path.orEmpty().lowercase()
+                                                    val mime=when {
+                                                        path.endsWith(".css")->"text/css"
+                                                        path.endsWith(".png")->"image/png"
+                                                        path.endsWith(".jpg")||path.endsWith(".jpeg")->"image/jpeg"
+                                                        path.endsWith(".gif")->"image/gif"
+                                                        path.endsWith(".svg")->"image/svg+xml"
+                                                        path.endsWith(".mp3")->"audio/mpeg"
+                                                        path.endsWith(".wav")->"audio/wav"
+                                                        else->"application/octet-stream"
+                                                    }
+                                                    return android.webkit.WebResourceResponse(
+                                                        mime,if(mime.startsWith("text/"))"utf-8" else null,
+                                                        java.io.ByteArrayInputStream(bytes)
+                                                    )
+                                                }
                                                 override fun shouldOverrideUrlLoading(
                                                     view:android.webkit.WebView?,
                                                     request:android.webkit.WebResourceRequest?
