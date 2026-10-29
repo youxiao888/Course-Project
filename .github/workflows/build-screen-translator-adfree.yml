@@ -1,4 +1,4 @@
-name: Screen Translator (Apple-style in-overlay dictionary and controls)
+name: Screen Translator (floating dictionary + MDX/MDD importer v2)
 on:
   push:
     branches:
@@ -163,6 +163,9 @@ jobs:
       - name: Replace external dictionary and bubble navigation with floating UI
         working-directory: upstream
         run: python3 ../.github/scripts/patch_inwindow_ui_v2.py
+      - name: Add MDX MDD Oxford dictionary import support
+        working-directory: upstream
+        run: python3 ../.github/scripts/patch_mdx_catalog.py
       - name: Verify precise word and gap behavior
         working-directory: upstream
         run: |
@@ -177,7 +180,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: screen-translator-inline-dictionary-v2-apk
+          name: screen-translator-apple-inline-mdx-v2-apk
           path: upstream/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
