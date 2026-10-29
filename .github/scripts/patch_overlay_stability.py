@@ -74,11 +74,27 @@ edit(handle,"    private var viewHeight = 0","""    private var viewHeight = 0
         updateLayout(context)
     }
 """)
+edit(handle,
+"""        val motionEventState by viewModel.motionEventFlow.collectAsStateWithLifecycle()""",
+"""        val motionEventState by viewModel.motionEventFlow.collectAsStateWithLifecycle()
+        LaunchedEffect(captureStatus, motionEventState) {
+            if (captureStatus == CaptureStatus.Requested ||
+                (motionEventState != MotionEvent.ACTION_DOWN && motionEventState != MotionEvent.ACTION_MOVE)
+            ) {
+                hideAim()
+            } else {
+                viewModel.pointerPositionFlow.value?.let { showAim(context,it.x,it.y) }
+            }
+        }""")
 splice(handle,"        Column(\n            modifier = Modifier\n                .wrapContentSize()", "        // 핸들 도킹",
 """        // The actual overlay window and touch target are only as large as
         // the floating ball. The aiming pointer is drawn by a non-touchable window.
         Box(
-            modifier = Modifier.size(dimensionResource(R.dimen.target_handle_width)),
+            modifier = Modifier
+                .size(dimensionResource(R.dimen.target_handle_width))
+                .alpha(if (captureStatus == CaptureStatus.Requested ||
+                    (textDetectMode == TextDetectMode.FIXED_AREA && fixedAreaViewState == FixedAreaView.State.Translating)
+                ) 0.01f else 1.0f),
             contentAlignment = Alignment.Center
         ) {
             val alpha by rememberInfiniteTransition(label = "service live anim").animateFloat(
@@ -127,7 +143,11 @@ edit(handle,"""                        val x = layoutParams.x + viewWidth / 2 + 
 """                        val x = layoutParams.x + viewWidth / 2 + _pointerOffsetX
                         val y = layoutParams.y - pointerDimen/2 -
                             applicationContext.resources.getDimensionPixelSize(R.dimen.target_handle_pointer_thumb_space) + _pointerOffsetY
-                        showAim(applicationContext,x,y)
+                        if (viewModel.captureStatusFlow.value != CaptureStatus.Requested) {
+                            showAim(applicationContext,x,y)
+                        } else {
+                            hideAim()
+                        }
                         viewModel.pointerPositionFlow.value = Point(x, y)""")
 edit(handle,"""                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                         repositionWithinScreen(applicationContext)
