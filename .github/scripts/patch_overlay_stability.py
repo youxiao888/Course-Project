@@ -176,7 +176,7 @@ edit(handle,"""        updateLayout(context)
 # Add draggable handle inside existing footer: no gestures in translation text itself.
 trans=str(base/"ui/screen/overlay/translation/TranslationView.kt")
 edit(trans,"import androidx.compose.ui.input.pointer.pointerInput",
-           "import androidx.compose.ui.input.pointer.pointerInput\nimport androidx.compose.foundation.gestures.detectDragGestures\nimport kotlin.math.roundToInt")
+           "import androidx.compose.ui.input.pointer.pointerInput\nimport androidx.compose.foundation.gestures.detectDragGestures")
 edit(trans,"    private lateinit var targetHandleViewModel: TargetHandleViewModel",
 """    private lateinit var targetHandleViewModel: TargetHandleViewModel
     private var manualWindowX: Int? = null
