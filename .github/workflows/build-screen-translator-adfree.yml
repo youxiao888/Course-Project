@@ -1,4 +1,4 @@
-name: Screen Translator (in-place dictionary and Apple-style UI v2)
+name: Screen Translator (translation window lifecycle hotfix V2.1)
 on:
   push:
     branches:
@@ -172,6 +172,9 @@ jobs:
       - name: Restore floating bubble after system service recreation
         working-directory: upstream
         run: python3 ../.github/scripts/patch_overlay_service_recovery.py
+      - name: Regression test - translation window must remain visible during loading
+        working-directory: upstream
+        run: python3 ../.github/scripts/check_translation_lifecycle.py
       - name: Verify precise word and gap behavior
         working-directory: upstream
         run: |
@@ -190,7 +193,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: screen-translator-apple-style-v2-apk
+          name: screen-translator-translation-visible-v2-1-apk
           path: upstream/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
