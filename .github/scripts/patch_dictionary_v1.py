@@ -224,7 +224,7 @@ class DictionaryActivity : ComponentActivity() {
                 }
                 outcome.onSuccess { count ->
                     version++
-                    message="已导入 $count 条词条"
+                    message=if(name.endsWith(".mdx",true)||name.endsWith(".mdd",true)) "已导入词典文件：$name" else "已导入 $count 条词条"
                 }.onFailure { error ->
                     message="导入失败：${error.message}"
                 }
