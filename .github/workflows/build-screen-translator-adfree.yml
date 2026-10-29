@@ -169,6 +169,9 @@ jobs:
       - name: Render iOS-style translation and draggable title bar
         working-directory: upstream
         run: python3 ../.github/scripts/patch_apple_translation_v2.py
+      - name: Restore floating bubble after system service recreation
+        working-directory: upstream
+        run: python3 ../.github/scripts/patch_overlay_service_recovery.py
       - name: Verify precise word and gap behavior
         working-directory: upstream
         run: |
