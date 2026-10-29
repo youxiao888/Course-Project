@@ -44,7 +44,7 @@ internal object MdxCatalog {
             .replace(Regex("[^a-zA-Z0-9_ .()\\-\\p{L}]"),"_").take(180)
         require(basename.endsWith(".mdx",true)||basename.endsWith(".mdd",true)){"只支持 MDX/MDD"}
         val target=File(dir(ctx),basename)
-        val tmp=File(dir(ctx),".$basename.tmp")
+        val tmp=File(dir(ctx),".import-${System.nanoTime()}.${basename.substringAfterLast('.')}")
         try {
             (ctx.contentResolver.openInputStream(uri)?:error("无法打开")).use { input->
                 tmp.outputStream().buffered().use{out->
