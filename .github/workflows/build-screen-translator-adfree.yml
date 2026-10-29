@@ -1,4 +1,4 @@
-name: Screen Translator (floating dictionary + MDX/MDD importer v2)
+name: Screen Translator (in-place dictionary and Apple-style UI v2)
 on:
   push:
     branches:
@@ -166,6 +166,9 @@ jobs:
       - name: Add MDX MDD Oxford dictionary import support
         working-directory: upstream
         run: python3 ../.github/scripts/patch_mdx_catalog.py
+      - name: Render iOS-style translation and draggable title bar
+        working-directory: upstream
+        run: python3 ../.github/scripts/patch_apple_translation_v2.py
       - name: Verify precise word and gap behavior
         working-directory: upstream
         run: |
@@ -180,7 +183,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: screen-translator-apple-inline-mdx-v2-apk
+          name: screen-translator-apple-style-v2-apk
           path: upstream/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
