@@ -1,4 +1,4 @@
-name: Screen Translator (Oxford whole-folder import V2.2)
+name: Screen Translator (Oxford MDX loader ABI hotfix V2.3)
 on:
   push:
     branches:
@@ -172,6 +172,9 @@ jobs:
       - name: Map numbered Oxford MDD archives and companion assets
         working-directory: upstream
         run: python3 ../.github/scripts/patch_oxford_mdd_resources.py
+      - name: Fix MDX loader API and validate before large MDD imports
+        working-directory: upstream
+        run: python3 ../.github/scripts/patch_mdict4j_string_api.py
       - name: Render iOS-style translation and draggable title bar
         working-directory: upstream
         run: python3 ../.github/scripts/patch_apple_translation_v2.py
@@ -185,7 +188,7 @@ jobs:
         working-directory: upstream
         run: |
           chmod +x gradlew
-          ./gradlew :app:testDebugUnitTest --tests com.galaxy.airviewdictionary.ui.screen.overlay.targethandle.PreciseWordHitTest --tests com.galaxy.airviewdictionary.data.local.dictionary.OxfordMddNamesTest --no-daemon --stacktrace
+          ./gradlew :app:testDebugUnitTest --tests com.galaxy.airviewdictionary.ui.screen.overlay.targethandle.PreciseWordHitTest --tests com.galaxy.airviewdictionary.data.local.dictionary.OxfordMddNamesTest --tests com.galaxy.airviewdictionary.data.local.dictionary.Mdict4jApiTest --no-daemon --stacktrace
       - name: Inspect MDict parser public class at build time
         working-directory: upstream
         run: |
@@ -199,7 +202,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: screen-translator-oxford-folder-v2-2-apk
+          name: screen-translator-oxford-api-fixed-v2-3-apk
           path: upstream/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
