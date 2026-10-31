@@ -59,7 +59,7 @@ internal object MdxCatalog {
                 }
             }
             if(basename.endsWith(".mdx",true)) {
-                cls().getMethod("loadDictionary",Path::class.java).invoke(null,tmp.toPath())
+                cls().getMethod("loadDictionary",String::class.java).invoke(null,tmp.absolutePath)
             }
             if(target.exists())check(target.delete())
             check(tmp.renameTo(target)){"保存失败"}
@@ -69,8 +69,8 @@ internal object MdxCatalog {
     }
     private fun reader(file:File):Any {
         synchronized(cache){cache[file.absolutePath]?.let{return it}}
-        val obj=cls().getMethod("loadDictionary",Path::class.java)
-            .invoke(null,file.toPath())
+        val obj=cls().getMethod("loadDictionary",String::class.java)
+            .invoke(null,file.absolutePath)
         synchronized(cache){cache[file.absolutePath]=obj}
         return obj
     }
@@ -82,8 +82,8 @@ internal object MdxCatalog {
         val raw=requestPath.substringBefore('?').trimStart('/')
         if(raw.isBlank()||raw.length>250||".." in raw)return null
         return runCatching {
-            val reader=cls().getMethod("loadDictionaryData",Path::class.java)
-                .invoke(null,file.toPath())
+            val reader=cls().getMethod("loadDictionaryData",String::class.java)
+                .invoke(null,file.absolutePath)
             val method=reader.javaClass.getMethod("getEntries",String::class.java)
             val keys=listOf("/$raw", 92.toChar().toString()+raw.replace('/',92.toChar()), raw)
             var content:ByteArray?=null
