@@ -80,7 +80,7 @@ internal object OxfordFolderImporter {
         ctx:Context,tree:Uri,
         onProgress:suspend (Progress)->Unit
     ):Report=withContext(Dispatchers.IO){
-        val files=findFiles(ctx,tree)
+        val files=findFiles(ctx,tree).sortedBy { !it.relative.endsWith(".mdx",true) }
         val total=files.filter{it.size>0}.sumOf{it.size}
         val root=File(ctx.filesDir,"mdict").apply{mkdirs()}
         val collections=File(root,"collections").apply{mkdirs()}
@@ -125,13 +125,18 @@ internal object OxfordFolderImporter {
                 }
                 if(item.size>=0 && fileBytes!=item.size)
                     error("文件复制不完整："+item.relative)
+                if(item.relative.endsWith(".mdx",true)) {
+                    // Validate main MDX first; avoid copying gigabytes on an invalid file.
+                    val cls=Class.forName("io.github.eb4j.mdict.MDictDictionary")
+                    cls.getMethod("loadDictionary",String::class.java).invoke(null,dest.absolutePath)
+                }
                 onProgress(Progress(i+1,files.size,item.relative,bytes,total))
             }
             currentCoroutineContext().ensureActive()
             val mdx=stage.walkTopDown().firstOrNull{it.isFile && it.extension.equals("mdx",true)}
                 ?:error("缺少 MDX")
             val cls=Class.forName("io.github.eb4j.mdict.MDictDictionary")
-            cls.getMethod("loadDictionary",Path::class.java).invoke(null,mdx.toPath())
+            cls.getMethod("loadDictionary",String::class.java).invoke(null,mdx.absolutePath)
             val collection=File(collections,"oaldpe-"+System.currentTimeMillis())
             check(stage.renameTo(collection)){"导入完成后无法发布词库"}
             committed=true
