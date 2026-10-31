@@ -8,6 +8,9 @@ if t.count(anchor)!=1:raise RuntimeError("mdict4j dependency missing")
 t=t.replace(anchor,'''    // Android does not ship StAX; mdict4j's Jackson XML requires both
     // the javax.xml.stream API and a concrete XMLInputFactory provider.
     implementation("javax.xml.stream:stax-api:1.0-2")
+    // Jackson XML 2.13 (mdict4j runtime transitive dependency) predates the
+    // official Android StAX factory compatibility fix shipped in 2.15.
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.17.3")
     implementation("com.fasterxml:aalto-xml:1.3.4")
     implementation("org.codehaus.woodstox:stax2-api:4.2.2")
     implementation("tokyo.northside:mdict4j:0.4.0") {''',1)
