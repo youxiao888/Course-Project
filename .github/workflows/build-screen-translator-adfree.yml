@@ -210,7 +210,7 @@ jobs:
           arch: x86_64
           target: google_apis
           profile: pixel_6
-          script: cd upstream && ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace
+          script: cd upstream && ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.galaxy.airviewdictionary.data.local.dictionary.AndroidMdictRuntimeTest --no-daemon --stacktrace
       - name: Upload APK
         if: success()
         uses: actions/upload-artifact@v4
