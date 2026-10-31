@@ -73,4 +73,53 @@ class AndroidMdictRuntimeTest {
     }
 }
 ''',"utf8")
+
+stax=Path("app/src/main/java/com/galaxy/airviewdictionary/data/local/dictionary/AndroidMdictRuntime.kt")
+stax.write_text(r'''package com.galaxy.airviewdictionary.data.local.dictionary
+
+/** Android does not bundle a StAX provider. Configure the embedded Aalto
+ * provider before loading *any* MDX or MDD. This is also exercised on emulator.
+ */
+internal object AndroidMdictRuntime {
+    @Synchronized fun ensureReady() {
+        System.setProperty("javax.xml.stream.XMLInputFactory",
+            "com.fasterxml.aalto.stax.InputFactoryImpl")
+        System.setProperty("javax.xml.stream.XMLOutputFactory",
+            "com.fasterxml.aalto.stax.OutputFactoryImpl")
+    }
+}
+''',"utf8")
+
+catalog=Path("app/src/main/java/com/galaxy/airviewdictionary/data/local/dictionary/MdxCatalog.kt")
+v=catalog.read_text("utf8")
+old='''    private fun cls():Class<*> =
+        names.firstNotNullOfOrNull { runCatching{Class.forName(it)}.getOrNull() }
+            ?: error("不支持的 MDX 解析器版本")'''
+new='''    private fun cls():Class<*> {
+        AndroidMdictRuntime.ensureReady()
+        return names.firstNotNullOfOrNull { runCatching{Class.forName(it)}.getOrNull() }
+            ?: error("不支持的 MDX 解析器版本")
+    }'''
+if v.count(old)!=1:raise RuntimeError("MDX parser initialization anchor mismatch")
+catalog.write_text(v.replace(old,new,1),"utf8")
+
+folder=Path("app/src/main/java/com/galaxy/airviewdictionary/data/local/dictionary/OxfordFolderImporter.kt")
+v=folder.read_text("utf8")
+old='''                    val cls=Class.forName("io.github.eb4j.mdict.MDictDictionary")'''
+new='''                    AndroidMdictRuntime.ensureReady()
+                    val cls=Class.forName("io.github.eb4j.mdict.MDictDictionary")'''
+if v.count(old)!=1:raise RuntimeError("Oxford folder parser initialization anchor mismatch")
+folder.write_text(v.replace(old,new,1),"utf8")
+
+# Test the actual production setup rather than a test-only property hack.
+testtext=test.read_text("utf8")
+testtext=testtext.replace('''        System.setProperty("javax.xml.stream.XMLInputFactory",
+            "com.fasterxml.aalto.stax.InputFactoryImpl")''',
+'''        AndroidMdictRuntime.ensureReady()''')
+testtext=testtext.replace('''        System.setProperty("javax.xml.stream.XMLInputFactory",
+            "com.fasterxml.aalto.stax.InputFactoryImpl")
+        System.setProperty("javax.xml.stream.XMLOutputFactory",
+            "com.fasterxml.aalto.stax.OutputFactoryImpl")''',
+'''        AndroidMdictRuntime.ensureReady()''')
+test.write_text(testtext,"utf8")
 print("Android StAX runtime dependencies and device instrumentation tests created")
