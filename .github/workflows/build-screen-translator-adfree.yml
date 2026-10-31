@@ -1,4 +1,4 @@
-name: Screen Translator (Oxford Android runtime regression V2.4)
+name: Screen Translator (Android RIPEMD128 encrypted index fix V2.5)
 on:
   push:
     branches:
@@ -181,6 +181,9 @@ jobs:
       - name: Add Android StAX runtime provider and instrumentation tests
         working-directory: upstream
         run: python3 ../.github/scripts/patch_stax_android_runtime.py
+      - name: Register Android RIPEMD128 digest and test encrypted MDict index
+        working-directory: upstream
+        run: python3 ../.github/scripts/patch_mdict_ripemd128_provider.py
       - name: Regression test - translation window must remain visible during loading
         working-directory: upstream
         run: python3 ../.github/scripts/check_translation_lifecycle.py
@@ -215,7 +218,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: screen-translator-oxford-runtime-tested-v2-4-apk
+          name: screen-translator-oxford-ripemd128-v2-5-apk
           path: upstream/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
