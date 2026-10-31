@@ -45,23 +45,20 @@ s=s[:idx]+r'''    /** Discover legacy single-file imports plus atomic whole-fold
             it.isFile && OxfordMddNames.matches(base,it.name)
         }.sortedWith(compareBy{OxfordMddNames.index(base,it.name)})
         val factory=runCatching {
-            cls().getMethod("loadDictionaryData",Path::class.java)
+            cls().getMethod("loadDictionaryData",String::class.java)
         }.getOrNull() ?: return null
         val keys=listOf("/"+raw,92.toChar().toString()+raw.replace('/',92.toChar()),raw)
         for(file in archives) {
             try {
                 val reader=synchronized(cache) {
-                    cache[file.absolutePath] ?: factory.invoke(null,file.toPath()).also{
+                    cache[file.absolutePath] ?: factory.invoke(null,file.absolutePath).also{
                         cache[file.absolutePath]=it
                     }
                 }
-                val find=reader.javaClass.getMethod("getEntries",String::class.java)
-                val get=reader.javaClass.methods.firstOrNull{it.name=="getData" && it.parameterCount==1}
-                    ?: continue
+                val read=reader.javaClass.getMethod("readData",String::class.java)
                 for(key in keys) {
-                    val entries=(find.invoke(reader,key) as? List<*>).orEmpty()
-                    val first=entries.firstOrNull() as? Map.Entry<*,*> ?:continue
-                    val bytes=get.invoke(reader,first.value) as? ByteArray ?:continue
+                    val bytes=runCatching{read.invoke(reader,key) as? ByteArray}.getOrNull()
+                        ?:continue
                     if(bytes.size<=16*1024*1024)return bytes
                 }
             }catch(e:Exception){Log.w("MDX","MDD resource lookup failed: "+file.name,e)}
