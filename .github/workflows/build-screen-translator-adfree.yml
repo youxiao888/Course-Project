@@ -1,4 +1,4 @@
-name: Screen Translator (Oxford MDX loader ABI hotfix V2.3)
+name: Screen Translator (Oxford Android runtime regression V2.4)
 on:
   push:
     branches:
@@ -178,6 +178,9 @@ jobs:
       - name: Restore floating bubble after system service recreation
         working-directory: upstream
         run: python3 ../.github/scripts/patch_overlay_service_recovery.py
+      - name: Add Android StAX runtime provider and instrumentation tests
+        working-directory: upstream
+        run: python3 ../.github/scripts/patch_stax_android_runtime.py
       - name: Regression test - translation window must remain visible during loading
         working-directory: upstream
         run: python3 ../.github/scripts/check_translation_lifecycle.py
@@ -195,11 +198,24 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Enable KVM on GitHub runner
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Test actual MDX XML parser on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          script: cd upstream && ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace
       - name: Upload APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: screen-translator-oxford-api-fixed-v2-3-apk
+          name: screen-translator-oxford-runtime-tested-v2-4-apk
           path: upstream/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
