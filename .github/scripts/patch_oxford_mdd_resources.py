@@ -120,4 +120,23 @@ class OxfordMddNamesTest {
     }
 }
 ''',"utf8")
+api_test=Path("app/src/test/java/com/galaxy/airviewdictionary/data/local/dictionary/MdictPublicApiTest.kt")
+api_test.parent.mkdir(parents=True,exist_ok=True)
+api_test.write_text(r'''package com.galaxy.airviewdictionary.data.local.dictionary
+
+import io.github.eb4j.mdict.MDictDictionary
+import org.junit.Assert.*
+import org.junit.Test
+
+class MdictPublicApiTest {
+    @Test fun mdict4jUsesStringPaths() {
+        val cls=MDictDictionary::class.java
+        assertEquals(cls,cls.getMethod("loadDictionary",String::class.java).returnType)
+        assertEquals(cls,cls.getMethod("loadDictionaryData",String::class.java).returnType)
+        assertEquals(List::class.java,cls.getMethod("readArticles",String::class.java).returnType)
+        assertEquals(ByteArray::class.java,cls.getMethod("readData",String::class.java).returnType)
+    }
+}
+''',"utf8")
+print("Mdict4j method signature contract test created.")
 print("Collection path lookup and numbered MDD resources patch complete")
