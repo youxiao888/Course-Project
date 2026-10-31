@@ -172,9 +172,6 @@ jobs:
       - name: Map numbered Oxford MDD archives and companion assets
         working-directory: upstream
         run: python3 ../.github/scripts/patch_oxford_mdd_resources.py
-      - name: Fix MDX loader API and validate before large MDD imports
-        working-directory: upstream
-        run: python3 ../.github/scripts/patch_mdict4j_string_api.py
       - name: Render iOS-style translation and draggable title bar
         working-directory: upstream
         run: python3 ../.github/scripts/patch_apple_translation_v2.py
@@ -188,7 +185,7 @@ jobs:
         working-directory: upstream
         run: |
           chmod +x gradlew
-          ./gradlew :app:testDebugUnitTest --tests com.galaxy.airviewdictionary.ui.screen.overlay.targethandle.PreciseWordHitTest --tests com.galaxy.airviewdictionary.data.local.dictionary.OxfordMddNamesTest --tests com.galaxy.airviewdictionary.data.local.dictionary.Mdict4jApiTest --no-daemon --stacktrace
+          ./gradlew :app:testDebugUnitTest --tests com.galaxy.airviewdictionary.ui.screen.overlay.targethandle.PreciseWordHitTest --tests com.galaxy.airviewdictionary.data.local.dictionary.OxfordMddNamesTest --tests com.galaxy.airviewdictionary.data.local.dictionary.MdictPublicApiTest --no-daemon --stacktrace
       - name: Inspect MDict parser public class at build time
         working-directory: upstream
         run: |
